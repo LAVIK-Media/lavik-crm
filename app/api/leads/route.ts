@@ -9,45 +9,53 @@ import {
 } from "@/lib/lead-validation";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const statusParam = searchParams.get("status") ?? "";
-  const q = (searchParams.get("q") ?? "").trim();
+  try {
+    const { searchParams } = new URL(req.url);
+    const statusParam = searchParams.get("status") ?? "";
+    const q = (searchParams.get("q") ?? "").trim();
 
-  const statuses = statusParam
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+    const statuses = statusParam
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-  const statusFilter = statuses.length
-    ? leadStatusSchema.array().safeParse(statuses)
-    : { success: true as const, data: [] as string[] };
+    const statusFilter = statuses.length
+      ? leadStatusSchema.array().safeParse(statuses)
+      : { success: true as const, data: [] as string[] };
 
-  if (!statusFilter.success) {
+    if (!statusFilter.success) {
+      return NextResponse.json(
+        { error: "Invalid status filter" },
+        { status: 400 },
+      );
+    }
+
+    const statusList = statusFilter.data as LeadStatus[];
+
+    const leads = await prisma.lead.findMany({
+      where: {
+        ...(statusList.length ? { status: { in: statusList } } : {}),
+        ...(q
+          ? {
+              OR: [
+                { companyName: { contains: q } },
+                { phoneNumber: { contains: q } },
+                { contactPerson: { contains: q } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ leads });
+  } catch (err) {
+    console.error("GET /api/leads failed", err);
     return NextResponse.json(
-      { error: "Invalid status filter" },
-      { status: 400 },
+      { error: "Server error", detail: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
     );
   }
-
-  const statusList = statusFilter.data as LeadStatus[];
-
-  const leads = await prisma.lead.findMany({
-    where: {
-      ...(statusList.length ? { status: { in: statusList } } : {}),
-      ...(q
-        ? {
-            OR: [
-              { companyName: { contains: q } },
-              { phoneNumber: { contains: q } },
-              { contactPerson: { contains: q } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  return NextResponse.json({ leads });
 }
 
 export async function POST(req: Request) {

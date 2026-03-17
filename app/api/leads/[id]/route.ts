@@ -11,10 +11,18 @@ type RouteContext = {
 };
 
 export async function GET(_req: Request, ctx: RouteContext) {
-  const { id } = await ctx.params;
-  const lead = await prisma.lead.findUnique({ where: { id } });
-  if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ lead });
+  try {
+    const { id } = await ctx.params;
+    const lead = await prisma.lead.findUnique({ where: { id } });
+    if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ lead });
+  } catch (err) {
+    console.error("GET /api/leads/[id] failed", err);
+    return NextResponse.json(
+      { error: "Server error", detail: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
 }
 
 export async function PATCH(req: Request, ctx: RouteContext) {
