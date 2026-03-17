@@ -63,7 +63,7 @@ export async function POST(req: Request) {
 
   const allowedDomain =
     (process.env.AUTH_ALLOWED_EMAIL_DOMAIN ?? "lavik-media.com").toLowerCase();
-  const sharedPassword = process.env.AUTH_SHARED_PASSWORD ?? "";
+  const sharedPassword = process.env.AUTH_SHARED_PASSWORD ?? "lavik-2026";
 
   const email = parsed.data.email.toLowerCase();
   const password = parsed.data.password;
