@@ -19,7 +19,15 @@ export async function POST(req: Request) {
   let body: unknown = null;
 
   if (contentType.includes("application/json")) {
-    body = await req.json().catch(() => null);
+    body = await req.json().catch(async () => {
+      const raw = await req.text().catch(() => "");
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    });
   } else if (
     contentType.includes("application/x-www-form-urlencoded") ||
     contentType.includes("multipart/form-data")
@@ -34,6 +42,14 @@ export async function POST(req: Request) {
   } else {
     // Try JSON first, then formData for maximum compatibility
     body = await req.json().catch(async () => {
+      const raw = await req.text().catch(() => "");
+      if (raw) {
+        try {
+          return JSON.parse(raw);
+        } catch {
+          // fall through to formData
+        }
+      }
       const fd = await req.formData().catch(() => null);
       if (!fd) return null;
       return { email: fd.get("email"), password: fd.get("password") };
