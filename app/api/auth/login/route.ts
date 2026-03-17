@@ -13,7 +13,31 @@ const loginSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
+  const contentType = req.headers.get("content-type") ?? "";
+  let body: unknown = null;
+
+  if (contentType.includes("application/json")) {
+    body = await req.json().catch(() => null);
+  } else if (
+    contentType.includes("application/x-www-form-urlencoded") ||
+    contentType.includes("multipart/form-data")
+  ) {
+    const fd = await req.formData().catch(() => null);
+    if (fd) {
+      body = {
+        email: fd.get("email"),
+        password: fd.get("password"),
+      };
+    }
+  } else {
+    // Try JSON first, then formData for maximum compatibility
+    body = await req.json().catch(async () => {
+      const fd = await req.formData().catch(() => null);
+      if (!fd) return null;
+      return { email: fd.get("email"), password: fd.get("password") };
+    });
+  }
+
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
