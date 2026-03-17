@@ -1,0 +1,96 @@
+import { NextResponse } from "next/server";
+import { Prisma, type LeadStatus } from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+import {
+  leadCreateSchema,
+  leadStatusSchema,
+  normalizePhoneNumber,
+} from "@/lib/lead-validation";
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const statusParam = searchParams.get("status") ?? "";
+  const q = (searchParams.get("q") ?? "").trim();
+
+  const statuses = statusParam
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const statusFilter = statuses.length
+    ? leadStatusSchema.array().safeParse(statuses)
+    : { success: true as const, data: [] as LeadStatus[] };
+
+  if (!statusFilter.success) {
+    return NextResponse.json(
+      { error: "Invalid status filter" },
+      { status: 400 },
+    );
+  }
+
+  const statusList = statusFilter.success
+    ? (statusFilter.data as unknown as LeadStatus[])
+    : [];
+
+  const leads = await prisma.lead.findMany({
+    where: {
+      ...(statusList.length ? { status: { in: statusList } } : {}),
+      ...(q
+        ? {
+            OR: [
+              { companyName: { contains: q } },
+              { phoneNumber: { contains: q } },
+              { contactPerson: { contains: q } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json({ leads });
+}
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => null);
+  const parsed = leadCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid input", details: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const input = parsed.data;
+  const phoneNumber = normalizePhoneNumber(input.phoneNumber);
+  const companyName = input.companyName.trim();
+
+  try {
+    const lead = await prisma.lead.create({
+      data: {
+        companyName,
+        phoneNumber,
+        website: input.website?.trim() || null,
+        contactPerson: input.contactPerson?.trim() || null,
+        notes: input.notes ?? "",
+        status: input.status ?? "NEW",
+      },
+    });
+
+    return NextResponse.json({ lead }, { status: 201 });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "Duplicate lead (phone number or company name already exists)" },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+

@@ -1,0 +1,35 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  CLOSED
+  NO_INTEREST
+}
+
+model Lead {
+  id            String     @id @default(cuid())
+  companyName   String
+  phoneNumber   String
+  website       String?
+  contactPerson String?
+  notes         String     @default("")
+  status        LeadStatus @default(NEW)
+  createdAt     DateTime   @default(now())
+
+  @@unique([phoneNumber])
+  @@unique([companyName])
+  @@index([status, createdAt])
+}
