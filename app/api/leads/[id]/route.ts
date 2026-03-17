@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import {
@@ -54,19 +53,14 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 
     return NextResponse.json({ lead });
   } catch (err) {
-    if (
-      err instanceof Prisma.PrismaClientKnownRequestError &&
-      err.code === "P2002"
-    ) {
+    const code = typeof err === "object" && err && "code" in err ? err.code : null;
+    if (code === "P2002") {
       return NextResponse.json(
         { error: "Duplicate lead (phone number or company name already exists)" },
         { status: 409 },
       );
     }
-    if (
-      err instanceof Prisma.PrismaClientKnownRequestError &&
-      err.code === "P2025"
-    ) {
+    if (code === "P2025") {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

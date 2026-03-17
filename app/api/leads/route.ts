@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Prisma, type LeadStatus } from "@prisma/client";
+import type { LeadStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import {
@@ -80,10 +80,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ lead }, { status: 201 });
   } catch (err) {
-    if (
-      err instanceof Prisma.PrismaClientKnownRequestError &&
-      err.code === "P2002"
-    ) {
+    const code = typeof err === "object" && err && "code" in err ? err.code : null;
+    if (code === "P2002") {
       return NextResponse.json(
         { error: "Duplicate lead (phone number or company name already exists)" },
         { status: 409 },
