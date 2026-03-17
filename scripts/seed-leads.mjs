@@ -3,11 +3,14 @@ import { PrismaLibSql } from "@prisma/adapter-libsql";
 import fs from "node:fs";
 import path from "node:path";
 
-const DB_URL = "file:./dev.db";
+const url = process.env.TURSO_DATABASE_URL ?? "file:./dev.db";
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
-const prisma = new PrismaClient({
-  adapter: new PrismaLibSql({ url: DB_URL }),
-});
+const adapter = url.startsWith("file:")
+  ? new PrismaLibSql({ url })
+  : new PrismaLibSql({ url, authToken: authToken ?? "" });
+
+const prisma = new PrismaClient({ adapter });
 
 function isUrlLike(s) {
   return /^https?:\/\//i.test(s);
