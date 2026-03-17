@@ -3,7 +3,7 @@
 import useSWR from "swr";
 import { useMemo, useState } from "react";
 
-import type { Lead, LeadStatus } from "@prisma/client";
+import type { Lead, LeadStatus } from "@/lib/crm-types";
 
 function toTelHref(phone: string) {
   const cleaned = phone.trim().replace(/[^\d+]/g, "");

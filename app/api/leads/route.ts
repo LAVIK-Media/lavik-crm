@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
   const statusFilter = statuses.length
     ? leadStatusSchema.array().safeParse(statuses)
-    : { success: true as const, data: [] as LeadStatus[] };
+    : { success: true as const, data: [] as string[] };
 
   if (!statusFilter.success) {
     return NextResponse.json(
@@ -29,9 +29,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const statusList = statusFilter.success
-    ? (statusFilter.data as unknown as LeadStatus[])
-    : [];
+  const statusList = statusFilter.data as LeadStatus[];
 
   const leads = await prisma.lead.findMany({
     where: {
