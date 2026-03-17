@@ -24,10 +24,11 @@ export default function LoginForm() {
     const email = String(form.get("email") ?? "");
     const password = String(form.get("password") ?? "");
 
+    const body = new URLSearchParams({ email, password });
     const res = await fetch("/api/auth/login", {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body,
     });
 
     setPending(false);
