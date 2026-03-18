@@ -44,13 +44,23 @@ async function main() {
 
   for (const stmt of statements) {
     const safe = stmt
-      .replace(/^CREATE TABLE\s+"User"/i, 'CREATE TABLE IF NOT EXISTS "User"')
+      // Statements may include comments before the SQL; don't anchor to line start.
+      .replace(/CREATE TABLE\s+"User"/i, 'CREATE TABLE IF NOT EXISTS "User"')
       .replace(
-        /^CREATE UNIQUE INDEX\s+"User_email_key"/i,
+        /CREATE UNIQUE INDEX\s+"User_email_key"/i,
         'CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key"',
       );
 
-    await client.execute(safe);
+    try {
+      await client.execute(safe);
+    } catch (e) {
+      const msg = String(e?.message ?? e);
+      // If the object already exists (from previous runs), ignore and continue.
+      if (msg.toLowerCase().includes("already exists")) {
+        continue;
+      }
+      throw e;
+    }
     process.stdout.write(".");
   }
 
