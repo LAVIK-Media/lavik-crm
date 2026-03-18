@@ -300,6 +300,7 @@ function LeadDialog(props: {
 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const initial: LeadDraft = isEdit
     ? {
@@ -347,12 +348,13 @@ function LeadDialog(props: {
     }
   }
 
-  async function onDelete() {
+  function onRequestDelete() {
     if (!isEdit) return;
-    const ok = window.confirm(
-      `Delete lead "${dialog.lead.companyName}"? This cannot be undone.`,
-    );
-    if (!ok) return;
+    setDeleteConfirmOpen(true);
+  }
+
+  async function onConfirmDelete() {
+    if (!isEdit) return;
 
     setError(null);
     setPending(true);
@@ -361,6 +363,7 @@ function LeadDialog(props: {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
       setPending(false);
+      setDeleteConfirmOpen(false);
     }
   }
 
@@ -459,32 +462,63 @@ function LeadDialog(props: {
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-          <div className="flex items-center justify-end gap-2 pt-2">
-            {isEdit ? (
+          {deleteConfirmOpen && isEdit ? (
+            <div className="pt-3">
+              <div className="rounded-xl border border-red-500/40 bg-red-950/20 p-4">
+                <p className="text-sm font-semibold text-red-200">
+                  Delete lead "{dialog.lead.companyName}"?
+                </p>
+                <p className="mt-1 text-xs text-[color:var(--lavik-text)]/80">
+                  This cannot be undone.
+                </p>
+                <div className="mt-3 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => setDeleteConfirmOpen(false)}
+                    className="rounded-xl border border-[color:var(--lavik-border)] bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-[color:var(--lavik-text-strong)] hover:border-[color:var(--lavik-accent)] disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={onConfirmDelete}
+                    className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-60"
+                  >
+                    {pending ? "Deleting…" : "Delete"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-end gap-2 pt-2">
+              {isEdit ? (
+                <button
+                  type="button"
+                  onClick={onRequestDelete}
+                  disabled={pending}
+                  className="mr-auto rounded-xl border border-red-500/40 bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-red-300 hover:border-red-400 hover:text-red-200 disabled:opacity-60"
+                >
+                  Delete
+                </button>
+              ) : null}
               <button
                 type="button"
-                onClick={onDelete}
-                disabled={pending}
-                className="mr-auto rounded-xl border border-red-500/40 bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-red-300 hover:border-red-400 hover:text-red-200 disabled:opacity-60"
+                onClick={onClose}
+                className="rounded-xl border border-[color:var(--lavik-border)] bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-[color:var(--lavik-text-strong)] hover:border-[color:var(--lavik-accent)]"
               >
-                Delete
+                Cancel
               </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl border border-[color:var(--lavik-border)] bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-[color:var(--lavik-text-strong)] hover:border-[color:var(--lavik-accent)]"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={pending}
-              className="rounded-xl bg-[color:var(--lavik-primary)] px-4 py-2 text-sm font-medium text-[color:var(--lavik-text-strong)] hover:bg-[color:var(--lavik-accent-hover)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lavik-glow)] disabled:opacity-60"
-            >
-              {pending ? "Saving…" : "Save"}
-            </button>
-          </div>
+              <button
+                type="submit"
+                disabled={pending}
+                className="rounded-xl bg-[color:var(--lavik-primary)] px-4 py-2 text-sm font-medium text-[color:var(--lavik-text-strong)] hover:bg-[color:var(--lavik-accent-hover)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lavik-glow)] disabled:opacity-60"
+              >
+                {pending ? "Saving…" : "Save"}
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>
