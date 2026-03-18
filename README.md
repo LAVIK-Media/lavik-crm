@@ -47,6 +47,23 @@ Expected responses:
 - `400`: validation error — bot should log and continue
 - `401`: missing/invalid API key
 
+**Update a lead (e.g. after enrichment):**
+
+- `PATCH /api/bot/leads/<id>`
+- Auth: same as above
+- Body: any subset of `companyName`, `phoneNumber`, `website`, `contactPerson`, `notes`, `status` (partial update)
+
+Example:
+
+```bash
+curl -X PATCH "https://<your-domain>/api/bot/leads/<lead-id>" \
+  -H "Authorization: Bearer $BOT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "notes": "Enriched.", "status": "CONTACTED" }'
+```
+
+Responses: `200` + `{ lead }`, `400` validation, `404` not found, `409` duplicate (e.g. new phone/company already exists), `401` invalid API key.
+
 ## Getting Started
 
 First, run the development server:
