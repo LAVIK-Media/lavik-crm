@@ -11,23 +11,6 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-// #region agent log
-function dbg(id: string, message: string, data: Record<string, unknown>) {
-  fetch("http://127.0.0.1:7495/ingest/2e4ffb3e-aeda-49a4-8728-092f227aa92b", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5bd4f8" },
-    body: JSON.stringify({
-      sessionId: "5bd4f8",
-      hypothesisId: id,
-      location: "app/api/auth/login/route.ts",
-      message,
-      data,
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-}
-// #endregion
-
 const loginSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(1),
@@ -76,13 +59,6 @@ export async function POST(req: Request) {
   }
 
   const parsed = loginSchema.safeParse(body);
-  // #region agent log
-  dbg("H4", "body parsed", {
-    parseOk: parsed.success,
-    emailPrefix: parsed.success ? parsed.data.email.slice(0, 3) + "..." + parsed.data.email.slice(-20) : null,
-    passwordLen: parsed.success ? parsed.data.password.length : 0,
-  });
-  // #endregion
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
@@ -94,14 +70,6 @@ export async function POST(req: Request) {
   const password = parsed.data.password;
 
   const domainCheckPass = Boolean(allowedDomain && email.endsWith(`@${allowedDomain}`));
-  // #region agent log
-  dbg("H1", "domain check", {
-    hasAllowedDomain: Boolean(allowedDomain),
-    allowedDomainLen: allowedDomain?.length ?? 0,
-    emailSuffix: email.slice(-25),
-    domainCheckPass,
-  });
-  // #endregion
   if (!domainCheckPass) {
     console.warn("[auth] 401: domain check failed", { allowedDomain, emailEnd: email.slice(-20) });
     return NextResponse.json(
@@ -111,24 +79,11 @@ export async function POST(req: Request) {
   }
 
   let user = await prisma.user.findUnique({ where: { email } });
-  // #region agent log
-  dbg("H2", "user lookup", {
-    userFound: !!user,
-    hasSetupCodeHash: !!user?.setupCodeHash,
-    hasPasswordHash: !!user?.passwordHash,
-  });
-  // #endregion
 
   // If a per-user setup code exists, accept it even if a personal password exists.
   if (user?.setupCodeHash) {
     const match = await compare(password, user.setupCodeHash);
-    // #region agent log
-    dbg("H3", "setupCode compare", { match });
-    // #endregion
     if (match) {
-      // #region agent log
-      dbg("OK", "login success", { path: "setupCode" });
-      // #endregion
       const token = await signSession({ email, mustSetPassword: true });
       const res = NextResponse.json({ ok: true, mustSetPassword: true });
       res.cookies.set(sessionCookieName(), token, sessionCookieOptions());
@@ -143,9 +98,6 @@ export async function POST(req: Request) {
   // Normal login with personal password (when set).
   if (user?.passwordHash) {
     const match = await compare(password, user.passwordHash);
-    // #region agent log
-    dbg("H3", "passwordHash compare", { match });
-    // #endregion
     if (!match) {
       console.warn("[auth] 401: password hash mismatch", { email });
       return NextResponse.json(
@@ -161,13 +113,6 @@ export async function POST(req: Request) {
 
   // First login / no personal password yet: fallback to global initial password (env).
   const initialMatch = Boolean(initialPassword && password === initialPassword);
-  // #region agent log
-  dbg("H5", "initial password branch", {
-    hasUser: !!user,
-    hasInitialEnv: !!initialPassword,
-    initialMatch,
-  });
-  // #endregion
   if (!initialMatch) {
     console.warn("[auth] 401: no user/setupCode or initial password wrong", {
       hasUser: !!user,
@@ -190,9 +135,6 @@ export async function POST(req: Request) {
     });
   }
 
-  // #region agent log
-  dbg("OK", "login success", { path: "initial" });
-  // #endregion
   const token = await signSession({ email, mustSetPassword: true });
   const res = NextResponse.json({ ok: true, mustSetPassword: true });
   res.cookies.set(sessionCookieName(), token, sessionCookieOptions());

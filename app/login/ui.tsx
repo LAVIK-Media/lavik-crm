@@ -21,8 +21,8 @@ export default function LoginForm() {
     setPending(true);
 
     const form = new FormData(e.currentTarget);
-    const email = String(form.get("email") ?? "");
-    const password = String(form.get("password") ?? "");
+    const email = String(form.get("email") ?? "").trim().toLowerCase();
+    const password = String(form.get("password") ?? "").trim();
 
     const body = new URLSearchParams({ email, password });
     const res = await fetch("/api/auth/login", {
