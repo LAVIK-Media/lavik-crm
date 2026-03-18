@@ -76,3 +76,20 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   }
 }
 
+export async function DELETE(_req: Request, ctx: RouteContext) {
+  const { id } = await ctx.params;
+
+  try {
+    await prisma.lead.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const code = typeof err === "object" && err && "code" in err ? err.code : null;
+    if (code === "P2025") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    console.error("DELETE /api/leads/[id] failed", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+

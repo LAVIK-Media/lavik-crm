@@ -100,6 +100,13 @@ export default function LeadBoard() {
     await mutate();
   }
 
+  async function deleteLead(id: string) {
+    const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+    const json = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(json?.error ?? "Delete failed");
+    await mutate();
+  }
+
   async function changeStatus(lead: Lead, status: LeadStatus) {
     const optimistic = leads
       .map((l) => (l.id === lead.id ? { ...l, status } : l))
@@ -269,6 +276,10 @@ export default function LeadBoard() {
             await updateLead(id, patch);
             setDialog(null);
           }}
+          onDelete={async (id) => {
+            await deleteLead(id);
+            setDialog(null);
+          }}
         />
       ) : null}
     </div>
@@ -282,6 +293,7 @@ function LeadDialog(props: {
   onClose: () => void;
   onCreate: (draft: LeadDraft) => Promise<void>;
   onUpdate: (id: string, patch: Partial<LeadDraft>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const { dialog, onClose } = props;
   const isEdit = dialog.mode === "edit";
@@ -329,6 +341,23 @@ function LeadDialog(props: {
       } else {
         await props.onCreate(draft);
       }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+      setPending(false);
+    }
+  }
+
+  async function onDelete() {
+    if (!isEdit) return;
+    const ok = window.confirm(
+      `Delete lead "${dialog.lead.companyName}"? This cannot be undone.`,
+    );
+    if (!ok) return;
+
+    setError(null);
+    setPending(true);
+    try {
+      await props.onDelete(dialog.lead.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
       setPending(false);
@@ -431,6 +460,16 @@ function LeadDialog(props: {
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
           <div className="flex items-center justify-end gap-2 pt-2">
+            {isEdit ? (
+              <button
+                type="button"
+                onClick={onDelete}
+                disabled={pending}
+                className="mr-auto rounded-xl border border-red-500/40 bg-[#0a0a0a] px-4 py-2 text-sm font-medium text-red-300 hover:border-red-400 hover:text-red-200 disabled:opacity-60"
+              >
+                Delete
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onClose}
