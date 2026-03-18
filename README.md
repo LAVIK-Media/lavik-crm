@@ -5,10 +5,47 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 - **AUTH_JWT_SECRET** – Secret for session JWT (required in prod).
 - **AUTH_ALLOWED_EMAIL_DOMAIN** – Allowed login domain, e.g. `lavik-media.com` (only `*@<domain>` can log in).
 - **AUTH_INITIAL_PASSWORD** – One-time setup password for first login; after first login users set a personal password (server-only, never exposed to client).
+- **BOT_API_KEY** – API key for `/api/bot/*` endpoints (server-only).
 - **TURSO_DATABASE_URL** / **TURSO_AUTH_TOKEN** – For production (Turso). Local dev uses SQLite in `prisma/dev.db`.
 
 After adding the User table, run the Turso user migration once:  
 `node scripts/apply-turso-user-migration.mjs` (with `TURSO_*` env set).
+
+After adding Lead audit columns (optional but recommended for bot ingest), run:  
+`node scripts/apply-turso-lead-audit-migration.mjs` (with `TURSO_*` env set).
+
+## OpenClaw / Bot ingest
+
+Create leads via:
+
+- `POST /api/bot/leads`
+- Auth: `Authorization: Bearer $BOT_API_KEY` (or `x-bot-api-key: $BOT_API_KEY`)
+- Body: same shape as the normal lead create API (`companyName`, `phoneNumber`, `website?`, `contactPerson?`, `notes?`, `status?`) plus optional `sourceRef` and `raw`.
+
+Example:
+
+```bash
+curl -X POST "https://<your-domain>/api/bot/leads" \
+  -H "Authorization: Bearer $BOT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "companyName": "Example GmbH",
+    "phoneNumber": "+43 660 1234567",
+    "website": "https://example.com",
+    "contactPerson": "Max Mustermann",
+    "notes": "Scraped overnight.",
+    "status": "NEW",
+    "sourceRef": "job-2026-03-18#42",
+    "raw": { "scrapeUrl": "https://example.com/impressum" }
+  }'
+```
+
+Expected responses:
+
+- `201`: created
+- `409`: duplicate (company name or phone exists) — bot should skip
+- `400`: validation error — bot should log and continue
+- `401`: missing/invalid API key
 
 ## Getting Started
 
