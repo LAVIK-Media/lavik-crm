@@ -1,6 +1,19 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+import { createClient } from "@libsql/client";
+import { randomUUID } from "node:crypto";
 import { hash } from "bcryptjs";
-import { prisma } from "../lib/prisma.js";
+
+// Load env from .env and .env.local (prefer .env.local)
+dotenv.config();
+dotenv.config({ path: path.join(process.cwd(), ".env.local"), override: true });
+
+const url = process.env.TURSO_DATABASE_URL;
+const authToken = process.env.TURSO_AUTH_TOKEN;
+if (!url) throw new Error("Missing TURSO_DATABASE_URL");
+if (!authToken) throw new Error("Missing TURSO_AUTH_TOKEN");
+
+const client = createClient({ url, authToken });
 
 const emails = [
   "linus@lavik-media.com",
@@ -21,10 +34,14 @@ async function main() {
     const code = randomCode();
     const setupCodeHash = await hash(code, 10);
 
-    await prisma.user.upsert({
-      where: { email },
-      create: { email, passwordHash: null, setupCodeHash },
-      update: { setupCodeHash },
+    // Ensure user exists and store per-user setup code hash.
+    await client.execute({
+      sql: `
+        INSERT INTO "User" ("id", "email", "passwordHash", "setupCodeHash", "createdAt")
+        VALUES (?1, ?2, NULL, ?3, CURRENT_TIMESTAMP)
+        ON CONFLICT("email") DO UPDATE SET "setupCodeHash" = excluded."setupCodeHash";
+      `,
+      args: [randomUUID(), email, setupCodeHash],
     });
 
     result.push({ email, code });
@@ -43,6 +60,6 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    client.close();
   });
 
