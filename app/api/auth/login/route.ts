@@ -74,6 +74,19 @@ export async function POST(req: Request) {
 
   let user = await prisma.user.findUnique({ where: { email } });
 
+  // If a per-user setup code exists, accept it even if a personal password exists.
+  // This enables safe password resets: set setupCodeHash and user is forced to set a new password.
+  if (user?.setupCodeHash) {
+    const match = await compare(password, user.setupCodeHash);
+    if (match) {
+      const token = await signSession({ email, mustSetPassword: true });
+      const res = NextResponse.json({ ok: true, mustSetPassword: true });
+      res.cookies.set(sessionCookieName(), token, sessionCookieOptions());
+      return res;
+    }
+  }
+
+  // Normal login with personal password (when set).
   if (user?.passwordHash) {
     const match = await compare(password, user.passwordHash);
     if (!match) {
@@ -85,17 +98,9 @@ export async function POST(req: Request) {
     return res;
   }
 
-  // First login / no personal password set yet.
-  // Prefer per-user setup code (stored hashed in DB). Fallback to global initial password (env).
-  if (user?.setupCodeHash) {
-    const match = await compare(password, user.setupCodeHash);
-    if (!match) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  } else {
-    if (!initialPassword || password !== initialPassword) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  // First login / no personal password yet: fallback to global initial password (env).
+  if (!initialPassword || password !== initialPassword) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   if (!user) {
