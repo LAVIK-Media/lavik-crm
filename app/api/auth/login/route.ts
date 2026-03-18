@@ -69,13 +69,13 @@ export async function POST(req: Request) {
   const password = parsed.data.password;
 
   if (!allowedDomain || !email.endsWith(`@${allowedDomain}`)) {
+    console.warn("[auth] 401: domain check failed", { allowedDomain, emailEnd: email.slice(-20) });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let user = await prisma.user.findUnique({ where: { email } });
 
   // If a per-user setup code exists, accept it even if a personal password exists.
-  // This enables safe password resets: set setupCodeHash and user is forced to set a new password.
   if (user?.setupCodeHash) {
     const match = await compare(password, user.setupCodeHash);
     if (match) {
@@ -90,6 +90,7 @@ export async function POST(req: Request) {
   if (user?.passwordHash) {
     const match = await compare(password, user.passwordHash);
     if (!match) {
+      console.warn("[auth] 401: password hash mismatch", { email });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const token = await signSession({ email });
@@ -100,6 +101,10 @@ export async function POST(req: Request) {
 
   // First login / no personal password yet: fallback to global initial password (env).
   if (!initialPassword || password !== initialPassword) {
+    console.warn("[auth] 401: no user/setupCode or initial password wrong", {
+      hasUser: !!user,
+      hasInitialEnv: !!initialPassword,
+    });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
