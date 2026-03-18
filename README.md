@@ -47,6 +47,14 @@ Expected responses:
 - `400`: validation error — bot should log and continue
 - `401`: missing/invalid API key
 
+**Search/list leads (to find existing leads and get their `id` for updates):**
+
+- `GET /api/bot/leads?q=<search>&status=<statuses>`
+- Auth: same as above
+- Query: `q` = search in company name, phone, contact person; `status` = comma-separated status filter (e.g. `NEW,CONTACTED`). Returns up to 200 leads.
+
+Example: `GET /api/bot/leads?q=Example%20GmbH` → `{ "leads": [{ "id": "...", "companyName": "Example GmbH", ... }] }`. Use `lead.id` for `PATCH`.
+
 **Update a lead (e.g. after enrichment):**
 
 - `PATCH /api/bot/leads/<id>`

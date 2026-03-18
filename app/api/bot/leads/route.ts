@@ -1,10 +1,60 @@
 import { NextResponse } from "next/server";
+import type { LeadStatus } from "@prisma/client";
 
 import { assertBotAuthorized } from "@/lib/bot-auth";
-import { leadCreateSchema, normalizePhoneNumber } from "@/lib/lead-validation";
+import { leadCreateSchema, leadStatusSchema, normalizePhoneNumber } from "@/lib/lead-validation";
 import { prisma } from "@/lib/prisma";
 
 const RAW_PAYLOAD_MAX_CHARS = 50_000;
+const GET_LEADS_LIMIT = 200;
+
+export async function GET(req: Request) {
+  const auth = assertBotAuthorized(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const statusParam = searchParams.get("status") ?? "";
+    const q = (searchParams.get("q") ?? "").trim();
+
+    const statuses = statusParam
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const statusFilter = statuses.length
+      ? leadStatusSchema.array().safeParse(statuses)
+      : { success: true as const, data: [] as string[] };
+
+    if (!statusFilter.success) {
+      return NextResponse.json({ error: "Invalid status filter" }, { status: 400 });
+    }
+
+    const statusList = statusFilter.data as LeadStatus[];
+
+    const leads = await prisma.lead.findMany({
+      where: {
+        ...(statusList.length ? { status: { in: statusList } } : {}),
+        ...(q
+          ? {
+              OR: [
+                { companyName: { contains: q } },
+                { phoneNumber: { contains: q } },
+                { contactPerson: { contains: q } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: GET_LEADS_LIMIT,
+    });
+
+    return NextResponse.json({ leads });
+  } catch (err) {
+    console.error("GET /api/bot/leads failed", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   const auth = assertBotAuthorized(req);
