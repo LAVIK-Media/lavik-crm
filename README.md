@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment variables
+
+- **AUTH_JWT_SECRET** – Secret for session JWT (required in prod).
+- **AUTH_ALLOWED_EMAIL_DOMAIN** – Allowed login domain, e.g. `lavik-media.com` (only `*@<domain>` can log in).
+- **AUTH_INITIAL_PASSWORD** – One-time setup password for first login; after first login users set a personal password (server-only, never exposed to client).
+- **TURSO_DATABASE_URL** / **TURSO_AUTH_TOKEN** – For production (Turso). Local dev uses SQLite in `prisma/dev.db`.
+
+After adding the User table, run the Turso user migration once:  
+`node scripts/apply-turso-user-migration.mjs` (with `TURSO_*` env set).
+
 ## Getting Started
 
 First, run the development server:

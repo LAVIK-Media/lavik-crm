@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { compare } from "bcryptjs";
 
 import {
   sessionCookieName,
   sessionCookieOptions,
   signSession,
 } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -40,14 +42,13 @@ export async function POST(req: Request) {
       };
     }
   } else {
-    // Try JSON first, then formData for maximum compatibility
     body = await req.json().catch(async () => {
       const raw = await req.text().catch(() => "");
       if (raw) {
         try {
           return JSON.parse(raw);
         } catch {
-          // fall through to formData
+          //
         }
       }
       const fd = await req.formData().catch(() => null);
@@ -61,22 +62,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
-  const allowedDomain = "lavik-media.com";
-  const sharedPassword = "lavik-2026";
+  const allowedDomain = process.env.AUTH_ALLOWED_EMAIL_DOMAIN;
+  const initialPassword = process.env.AUTH_INITIAL_PASSWORD;
 
   const email = parsed.data.email.toLowerCase();
   const password = parsed.data.password;
 
-  if (!email.endsWith(`@${allowedDomain}`)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!sharedPassword || password !== sharedPassword) {
+  if (!allowedDomain || !email.endsWith(`@${allowedDomain}`)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const token = await signSession({ email });
-  const res = NextResponse.json({ ok: true });
+  let user = await prisma.user.findUnique({ where: { email } });
+
+  if (user?.passwordHash) {
+    const match = await compare(password, user.passwordHash);
+    if (!match) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const token = await signSession({ email });
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set(sessionCookieName(), token, sessionCookieOptions());
+    return res;
+  }
+
+  if (!initialPassword || password !== initialPassword) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: { email, passwordHash: null },
+    });
+  }
+
+  const token = await signSession({ email, mustSetPassword: true });
+  const res = NextResponse.json({ ok: true, mustSetPassword: true });
   res.cookies.set(sessionCookieName(), token, sessionCookieOptions());
   return res;
 }
-

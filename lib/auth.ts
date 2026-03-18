@@ -3,8 +3,9 @@ import { jwtVerify, SignJWT } from "jose";
 
 const COOKIE_NAME = "lavik_crm_session";
 
-type SessionPayload = {
+export type SessionPayload = {
   email: string;
+  mustSetPassword?: boolean;
 };
 
 function getSecretKey() {
@@ -25,7 +26,8 @@ export async function verifySession(token: string) {
   const { payload } = await jwtVerify(token, getSecretKey());
   const email = payload.email;
   if (typeof email !== "string") return null;
-  return { email } satisfies SessionPayload;
+  const mustSetPassword = payload.mustSetPassword === true;
+  return { email, mustSetPassword } satisfies SessionPayload;
 }
 
 export async function getSession() {

@@ -38,6 +38,11 @@ export default function LoginForm() {
       return;
     }
 
+    const data = await res.json().catch(() => ({}));
+    if (data.mustSetPassword) {
+      router.replace("/set-password");
+      return;
+    }
     router.replace(nextPath);
   }
 
@@ -49,7 +54,7 @@ export default function LoginForm() {
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="you@lavik-media.com"
+          placeholder="name@company.com"
           className="mt-1 w-full rounded-xl border border-[color:var(--lavik-border)] bg-[color:var(--lavik-bg)]/20 px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none ring-0 placeholder:text-[color:var(--lavik-text)]/50 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:text-sm"
         />
       </label>
@@ -60,7 +65,7 @@ export default function LoginForm() {
           name="password"
           type="password"
           autoComplete="current-password"
-          placeholder="Shared password"
+          placeholder="Password"
           className="mt-1 w-full rounded-xl border border-[color:var(--lavik-border)] bg-[color:var(--lavik-bg)]/20 px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none ring-0 placeholder:text-[color:var(--lavik-text)]/50 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:text-sm"
         />
       </label>

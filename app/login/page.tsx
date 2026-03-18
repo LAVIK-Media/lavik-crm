@@ -19,10 +19,6 @@ export default function LoginPage() {
           <Suspense fallback={<div className="h-[172px]" />}>
             <LoginForm />
           </Suspense>
-
-          <p className="mt-6 text-xs text-[color:var(--lavik-text)]/70">
-            Access is restricted to <span className="font-medium">@lavik-media.com</span>.
-          </p>
         </div>
       </div>
     </div>
