@@ -18,6 +18,14 @@ function splitSqlStatements(sql) {
     .map((s) => (s.endsWith(";") ? s : `${s};`));
 }
 
+async function ensureUserSetupCodeColumn() {
+  // libSQL: PRAGMA table_info works
+  const info = await client.execute('PRAGMA table_info("User");');
+  const cols = new Set(info.rows.map((r) => String(r.name)));
+  if (cols.has("setupCodeHash")) return;
+  await client.execute('ALTER TABLE "User" ADD COLUMN "setupCodeHash" TEXT;');
+}
+
 async function main() {
   const migrationPath = path.join(
     process.cwd(),
@@ -40,6 +48,8 @@ async function main() {
     await client.execute(safe);
     process.stdout.write(".");
   }
+
+  await ensureUserSetupCodeColumn();
 
   process.stdout.write("\n");
   console.log("User migration applied.");

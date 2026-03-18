@@ -85,13 +85,22 @@ export async function POST(req: Request) {
     return res;
   }
 
-  if (!initialPassword || password !== initialPassword) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // First login / no personal password set yet.
+  // Prefer per-user setup code (stored hashed in DB). Fallback to global initial password (env).
+  if (user?.setupCodeHash) {
+    const match = await compare(password, user.setupCodeHash);
+    if (!match) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  } else {
+    if (!initialPassword || password !== initialPassword) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   if (!user) {
     user = await prisma.user.create({
-      data: { email, passwordHash: null },
+      data: { email, passwordHash: null, setupCodeHash: null },
     });
   }
 

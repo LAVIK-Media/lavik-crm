@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   const passwordHash = await hash(parsed.data.newPassword, 10);
   await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash },
+    data: { passwordHash, setupCodeHash: null },
   });
 
   const token = await signSession({ email: session.email });
