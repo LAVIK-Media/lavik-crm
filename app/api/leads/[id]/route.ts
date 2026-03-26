@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { ensureLeadSearchColumns } from "@/lib/ensure-lead-columns";
 import { prisma } from "@/lib/prisma";
 import {
   leadUpdateSchema,
@@ -12,6 +13,7 @@ type RouteContext = {
 
 export async function GET(_req: Request, ctx: RouteContext) {
   try {
+    await ensureLeadSearchColumns();
     const { id } = await ctx.params;
     const lead = await prisma.lead.findUnique({ where: { id } });
     if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -26,6 +28,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
 }
 
 export async function PATCH(req: Request, ctx: RouteContext) {
+  await ensureLeadSearchColumns();
   const { id } = await ctx.params;
   const body = await req.json().catch(() => null);
   const parsed = leadUpdateSchema.safeParse(body);
@@ -84,6 +87,7 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 }
 
 export async function DELETE(_req: Request, ctx: RouteContext) {
+  await ensureLeadSearchColumns();
   const { id } = await ctx.params;
 
   try {

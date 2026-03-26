@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { LeadStatus } from "@prisma/client";
 
 import { assertBotAuthorized } from "@/lib/bot-auth";
+import { ensureLeadSearchColumns } from "@/lib/ensure-lead-columns";
 import { leadCreateSchema, leadStatusSchema, normalizePhoneNumber } from "@/lib/lead-validation";
 import { prisma } from "@/lib/prisma";
 
@@ -13,6 +14,7 @@ export async function GET(req: Request) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   try {
+    await ensureLeadSearchColumns();
     const { searchParams } = new URL(req.url);
     const statusParam = searchParams.get("status") ?? "";
     const q = (searchParams.get("q") ?? "").trim();
@@ -65,6 +67,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const auth = assertBotAuthorized(req);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  await ensureLeadSearchColumns();
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {

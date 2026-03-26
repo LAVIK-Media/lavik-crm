@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { assertBotAuthorized } from "@/lib/bot-auth";
+import { ensureLeadSearchColumns } from "@/lib/ensure-lead-columns";
 import {
   leadUpdateSchema,
   normalizePhoneNumber,
@@ -14,6 +15,7 @@ type RouteContext = {
 export async function PATCH(req: Request, ctx: RouteContext) {
   const auth = assertBotAuthorized(req);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  await ensureLeadSearchColumns();
 
   const { id } = await ctx.params;
   const body = await req.json().catch(() => null);
