@@ -16,6 +16,8 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const statusParam = searchParams.get("status") ?? "";
     const q = (searchParams.get("q") ?? "").trim();
+    const tag = (searchParams.get("tag") ?? "").trim();
+    const location = (searchParams.get("location") ?? "").trim();
 
     const statuses = statusParam
       .split(",")
@@ -35,12 +37,16 @@ export async function GET(req: Request) {
     const leads = await prisma.lead.findMany({
       where: {
         ...(statusList.length ? { status: { in: statusList } } : {}),
+        ...(tag ? { tags: { contains: tag } } : {}),
+        ...(location ? { location: { contains: location } } : {}),
         ...(q
           ? {
               OR: [
                 { companyName: { contains: q } },
                 { phoneNumber: { contains: q } },
                 { contactPerson: { contains: q } },
+                { tags: { contains: q } },
+                { location: { contains: q } },
               ],
             }
           : {}),
@@ -98,7 +104,10 @@ export async function POST(req: Request) {
         companyName,
         phoneNumber,
         website: input.website?.trim() || null,
+        googleMapsUrl: input.googleMapsUrl?.trim() || null,
         contactPerson: input.contactPerson?.trim() || null,
+        tags: input.tags?.trim() || null,
+        location: input.location?.trim() || null,
         notes: input.notes ?? "",
         status: input.status ?? "NEW",
         source: "openclaw",

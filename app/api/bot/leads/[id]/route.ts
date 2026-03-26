@@ -44,8 +44,15 @@ export async function PATCH(req: Request, ctx: RouteContext) {
         ...(input.website !== undefined
           ? { website: input.website?.trim() || null }
           : {}),
+        ...(input.googleMapsUrl !== undefined
+          ? { googleMapsUrl: input.googleMapsUrl?.trim() || null }
+          : {}),
         ...(input.contactPerson !== undefined
           ? { contactPerson: input.contactPerson?.trim() || null }
+          : {}),
+        ...(input.tags !== undefined ? { tags: input.tags?.trim() || null } : {}),
+        ...(input.location !== undefined
+          ? { location: input.location?.trim() || null }
           : {}),
         ...(input.notes !== undefined ? { notes: input.notes ?? "" } : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),

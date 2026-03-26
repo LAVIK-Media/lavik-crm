@@ -10,7 +10,10 @@ export type Lead = {
   companyName: string;
   phoneNumber: string;
   website: string | null;
+  googleMapsUrl: string | null;
   contactPerson: string | null;
+  tags: string | null;
+  location: string | null;
   notes: string;
   status: LeadStatus;
   createdAt: string;

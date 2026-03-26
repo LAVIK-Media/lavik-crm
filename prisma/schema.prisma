@@ -32,7 +32,10 @@ model Lead {
   companyName   String
   phoneNumber   String
   website       String?
+  googleMapsUrl String?
   contactPerson String?
+  tags          String?
+  location      String?
   notes         String     @default("")
   status        LeadStatus @default(NEW)
   createdAt     DateTime   @default(now())

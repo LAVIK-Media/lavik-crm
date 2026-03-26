@@ -14,13 +14,16 @@ After adding the User table, run the Turso user migration once:
 After adding Lead audit columns (optional but recommended for bot ingest), run:  
 `node scripts/apply-turso-lead-audit-migration.mjs` (with `TURSO_*` env set).
 
+After adding lead search metadata columns (`googleMapsUrl`, `tags`, `location`), run:  
+`node scripts/apply-turso-lead-search-metadata-migration.mjs` (with `TURSO_*` env set).
+
 ## OpenClaw / Bot ingest
 
 Create leads via:
 
 - `POST /api/bot/leads`
 - Auth: `Authorization: Bearer $BOT_API_KEY` (or `x-bot-api-key: $BOT_API_KEY`)
-- Body: same shape as the normal lead create API (`companyName`, `phoneNumber`, `website?`, `contactPerson?`, `notes?`, `status?`) plus optional `sourceRef` and `raw`.
+- Body: same shape as the normal lead create API (`companyName`, `phoneNumber`, `website?`, `googleMapsUrl?`, `contactPerson?`, `tags?`, `location?`, `notes?`, `status?`) plus optional `sourceRef` and `raw`.
 
 Example:
 
@@ -49,9 +52,9 @@ Expected responses:
 
 **Search/list leads (to find existing leads and get their `id` for updates):**
 
-- `GET /api/bot/leads?q=<search>&status=<statuses>`
+- `GET /api/bot/leads?q=<search>&status=<statuses>&tag=<tag>&location=<location>`
 - Auth: same as above
-- Query: `q` = search in company name, phone, contact person; `status` = comma-separated status filter (e.g. `NEW,CONTACTED`). Returns up to 200 leads.
+- Query: `q` = search in company name, phone, contact person, tags, location; `status` = comma-separated status filter (e.g. `NEW,CONTACTED`); `tag` and `location` are explicit filters. Returns up to 200 leads.
 
 Example: `GET /api/bot/leads?q=Example%20GmbH` → `{ "leads": [{ "id": "...", "companyName": "Example GmbH", ... }] }`. Use `lead.id` for `PATCH`.
 
@@ -59,7 +62,7 @@ Example: `GET /api/bot/leads?q=Example%20GmbH` → `{ "leads": [{ "id": "...", "
 
 - `PATCH /api/bot/leads/<id>`
 - Auth: same as above
-- Body: any subset of `companyName`, `phoneNumber`, `website`, `contactPerson`, `notes`, `status` (partial update)
+- Body: any subset of `companyName`, `phoneNumber`, `website`, `googleMapsUrl`, `contactPerson`, `tags`, `location`, `notes`, `status` (partial update)
 
 Example:
 

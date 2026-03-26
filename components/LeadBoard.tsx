@@ -46,7 +46,10 @@ type LeadDraft = {
   companyName: string;
   phoneNumber: string;
   website?: string;
+  googleMapsUrl?: string;
   contactPerson?: string;
+  tags?: string;
+  location?: string;
   notes?: string;
   status?: LeadStatus;
 };
@@ -54,6 +57,8 @@ type LeadDraft = {
 export default function LeadBoard() {
   const [view, setView] = useState<ViewKey>("NEW");
   const [q, setQ] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
   const [dialog, setDialog] = useState<
     | { mode: "create"; initial?: Partial<LeadDraft> }
     | { mode: "edit"; lead: Lead }
@@ -69,8 +74,10 @@ export default function LeadBoard() {
     const sp = new URLSearchParams();
     sp.set("status", statusParam(active.statuses));
     if (q.trim()) sp.set("q", q.trim());
+    if (tagFilter.trim()) sp.set("tag", tagFilter.trim());
+    if (locationFilter.trim()) sp.set("location", locationFilter.trim());
     return `/api/leads?${sp.toString()}`;
-  }, [active.statuses, q]);
+  }, [active.statuses, q, tagFilter, locationFilter]);
 
   const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
     keepPreviousData: true,
@@ -142,17 +149,29 @@ export default function LeadBoard() {
             </button>
           ))}
         </div>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search company, phone, contact…"
+            placeholder="Search company, phone, contact, tags…"
+            className="w-full rounded-xl border border-[color:var(--lavik-border)] bg-[color:var(--lavik-surface)] px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none placeholder:text-[color:var(--lavik-text)]/60 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:col-span-2 sm:text-sm"
+          />
+          <input
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            placeholder="Tag filter (restaurant, bar…)"
+            className="w-full rounded-xl border border-[color:var(--lavik-border)] bg-[color:var(--lavik-surface)] px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none placeholder:text-[color:var(--lavik-text)]/60 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:text-sm"
+          />
+          <input
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            placeholder="Location filter (Tirol, Rosenheim…)"
             className="w-full rounded-xl border border-[color:var(--lavik-border)] bg-[color:var(--lavik-surface)] px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none placeholder:text-[color:var(--lavik-text)]/60 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:text-sm"
           />
           <button
             type="button"
             onClick={() => setDialog({ mode: "create" })}
-            className="shrink-0 rounded-xl bg-[color:var(--lavik-primary)] px-4 py-2 text-sm font-medium text-[color:var(--lavik-text-strong)] hover:bg-[color:var(--lavik-accent-hover)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lavik-glow)]"
+            className="shrink-0 rounded-xl bg-[color:var(--lavik-primary)] px-4 py-2 text-sm font-medium text-[color:var(--lavik-text-strong)] hover:bg-[color:var(--lavik-accent-hover)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lavik-glow)] sm:justify-self-end"
           >
             Add
           </button>
@@ -219,7 +238,32 @@ export default function LeadBoard() {
                           Website
                         </a>
                       ) : null}
+                      {lead.googleMapsUrl ? (
+                        <a
+                          href={lead.googleMapsUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="truncate text-[color:var(--lavik-text)]/95 underline decoration-[color:var(--lavik-accent)]/50 underline-offset-4 hover:decoration-[color:var(--lavik-accent)]"
+                        >
+                          Google Maps
+                        </a>
+                      ) : null}
                     </div>
+
+                    {lead.tags || lead.location ? (
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                        {lead.tags ? (
+                          <span className="rounded-full border border-[color:var(--lavik-border)] bg-[color:var(--lavik-bg)]/20 px-2 py-1 text-[color:var(--lavik-text)]">
+                            {lead.tags}
+                          </span>
+                        ) : null}
+                        {lead.location ? (
+                          <span className="rounded-full border border-[color:var(--lavik-border)] bg-[color:var(--lavik-bg)]/20 px-2 py-1 text-[color:var(--lavik-text)]">
+                            {lead.location}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     {lead.notes ? (
                       <p className="mt-2 text-sm text-[color:var(--lavik-text)]/80">
@@ -307,7 +351,10 @@ function LeadDialog(props: {
         companyName: dialog.lead.companyName,
         phoneNumber: dialog.lead.phoneNumber,
         website: dialog.lead.website ?? "",
+        googleMapsUrl: dialog.lead.googleMapsUrl ?? "",
         contactPerson: dialog.lead.contactPerson ?? "",
+        tags: dialog.lead.tags ?? "",
+        location: dialog.lead.location ?? "",
         notes: dialog.lead.notes ?? "",
         status: dialog.lead.status,
       }
@@ -315,7 +362,10 @@ function LeadDialog(props: {
         companyName: "",
         phoneNumber: "",
         website: "",
+        googleMapsUrl: "",
         contactPerson: "",
+        tags: "",
+        location: "",
         notes: "",
         status: "NEW",
         ...(dialog.initial ?? {}),
@@ -331,7 +381,10 @@ function LeadDialog(props: {
       companyName: String(fd.get("companyName") ?? ""),
       phoneNumber: String(fd.get("phoneNumber") ?? ""),
       website: String(fd.get("website") ?? ""),
+      googleMapsUrl: String(fd.get("googleMapsUrl") ?? ""),
       contactPerson: String(fd.get("contactPerson") ?? ""),
+      tags: String(fd.get("tags") ?? ""),
+      location: String(fd.get("location") ?? ""),
       notes: String(fd.get("notes") ?? ""),
       status: fd.get("status") as LeadStatus,
     };
@@ -425,6 +478,20 @@ function LeadDialog(props: {
             </label>
             <label className="block">
               <span className="text-xs font-medium text-[color:var(--lavik-text)]/80">
+                Google Maps URL
+              </span>
+              <input
+                name="googleMapsUrl"
+                defaultValue={initial.googleMapsUrl}
+                placeholder="https://maps.google.com/..."
+                className="mt-1 w-full rounded-xl border border-[color:var(--lavik-border)] bg-[#0a0a0a] px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none placeholder:text-[color:var(--lavik-text)]/50 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:text-sm"
+              />
+            </label>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-medium text-[color:var(--lavik-text)]/80">
                 Contact person
               </span>
               <input
@@ -433,7 +500,28 @@ function LeadDialog(props: {
                 className="mt-1 w-full rounded-xl border border-[color:var(--lavik-border)] bg-[#0a0a0a] px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none placeholder:text-[color:var(--lavik-text)]/50 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:text-sm"
               />
             </label>
+            <label className="block">
+              <span className="text-xs font-medium text-[color:var(--lavik-text)]/80">
+                Tags (comma-separated)
+              </span>
+              <input
+                name="tags"
+                defaultValue={initial.tags}
+                placeholder="restaurant, bar, friseur"
+                className="mt-1 w-full rounded-xl border border-[color:var(--lavik-border)] bg-[#0a0a0a] px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none placeholder:text-[color:var(--lavik-text)]/50 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:text-sm"
+              />
+            </label>
           </div>
+
+          <label className="block">
+            <span className="text-xs font-medium text-[color:var(--lavik-text)]/80">Location</span>
+            <input
+              name="location"
+              defaultValue={initial.location}
+              placeholder="Tirol, Bayern, Rosenheim..."
+              className="mt-1 w-full rounded-xl border border-[color:var(--lavik-border)] bg-[#0a0a0a] px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none placeholder:text-[color:var(--lavik-text)]/50 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:text-sm"
+            />
+          </label>
 
           <label className="block">
             <span className="text-xs font-medium text-[color:var(--lavik-text)]/80">Notes</span>
