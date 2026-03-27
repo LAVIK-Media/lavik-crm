@@ -1,5 +1,6 @@
 export type LeadStatus =
   | "NEW"
+  | "VERIFIED"
   | "CONTACTED"
   | "INTERESTED"
   | "CLOSED"

@@ -54,7 +54,7 @@ Expected responses:
 
 - `GET /api/bot/leads?q=<search>&status=<statuses>&tag=<tag>&location=<location>`
 - Auth: same as above
-- Query: `q` = search in company name, phone, contact person, tags, location; `status` = comma-separated status filter (e.g. `NEW,CONTACTED`); `tag` and `location` are explicit filters.
+- Query: `q` = search in company name, phone, contact person, tags, location; `status` = comma-separated status filter (e.g. `NEW,VERIFIED,CONTACTED`); `tag` and `location` are explicit filters. Status values include `VERIFIED` (qualified, ready to call).
 
 Example: `GET /api/bot/leads?q=Example%20GmbH` → `{ "leads": [{ "id": "...", "companyName": "Example GmbH", ... }] }`. Use `lead.id` for `PATCH`.
 

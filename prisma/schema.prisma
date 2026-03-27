@@ -13,6 +13,7 @@ datasource db {
 
 enum LeadStatus {
   NEW
+  VERIFIED
   CONTACTED
   INTERESTED
   CLOSED

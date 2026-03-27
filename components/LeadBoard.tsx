@@ -10,10 +10,15 @@ function toTelHref(phone: string) {
   return cleaned ? `tel:${cleaned}` : undefined;
 }
 
-type ViewKey = "NEW" | "IN_PROGRESS" | "CLOSED" | "ARCHIVED";
+type ViewKey = "NEW" | "VERIFIED" | "IN_PROGRESS" | "CLOSED" | "ARCHIVED";
 
 const VIEWS: Array<{ key: ViewKey; label: string; statuses: LeadStatus[] }> = [
   { key: "NEW", label: "New Leads", statuses: ["NEW"] },
+  {
+    key: "VERIFIED",
+    label: "Verified · Ready to call",
+    statuses: ["VERIFIED"],
+  },
   {
     key: "IN_PROGRESS",
     label: "Contacted / In Progress",
@@ -25,6 +30,7 @@ const VIEWS: Array<{ key: ViewKey; label: string; statuses: LeadStatus[] }> = [
 
 const ALL_STATUSES: Array<{ value: LeadStatus; label: string }> = [
   { value: "NEW", label: "New" },
+  { value: "VERIFIED", label: "Verified (ready to call)" },
   { value: "CONTACTED", label: "Contacted" },
   { value: "INTERESTED", label: "Interested" },
   { value: "CLOSED", label: "Closed" },
