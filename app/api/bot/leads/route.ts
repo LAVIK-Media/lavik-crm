@@ -7,7 +7,6 @@ import { leadCreateSchema, leadStatusSchema, normalizePhoneNumber } from "@/lib/
 import { prisma } from "@/lib/prisma";
 
 const RAW_PAYLOAD_MAX_CHARS = 50_000;
-const GET_LEADS_LIMIT = 200;
 
 export async function GET(req: Request) {
   const auth = assertBotAuthorized(req);
@@ -65,7 +64,6 @@ export async function GET(req: Request) {
           : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: GET_LEADS_LIMIT,
     });
 
     return NextResponse.json({ leads });
