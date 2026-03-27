@@ -20,6 +20,10 @@ export async function GET(req: Request) {
     const q = (searchParams.get("q") ?? "").trim();
     const tag = (searchParams.get("tag") ?? "").trim();
     const location = (searchParams.get("location") ?? "").trim();
+    const excludeTags = (searchParams.get("excludeTags") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     const statuses = statusParam
       .split(",")
@@ -41,6 +45,13 @@ export async function GET(req: Request) {
         ...(statusList.length ? { status: { in: statusList } } : {}),
         ...(tag ? { tags: { contains: tag } } : {}),
         ...(location ? { location: { contains: location } } : {}),
+        ...(excludeTags.length
+          ? {
+              AND: excludeTags.map((t) => ({
+                NOT: { tags: { contains: t } },
+              })),
+            }
+          : {}),
         ...(q
           ? {
               OR: [

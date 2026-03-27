@@ -58,6 +58,7 @@ export default function LeadBoard() {
   const [view, setView] = useState<ViewKey>("NEW");
   const [q, setQ] = useState("");
   const [tagFilter, setTagFilter] = useState("");
+  const [excludeTagsFilter, setExcludeTagsFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [dialog, setDialog] = useState<
     | { mode: "create"; initial?: Partial<LeadDraft> }
@@ -75,9 +76,10 @@ export default function LeadBoard() {
     sp.set("status", statusParam(active.statuses));
     if (q.trim()) sp.set("q", q.trim());
     if (tagFilter.trim()) sp.set("tag", tagFilter.trim());
+    if (excludeTagsFilter.trim()) sp.set("excludeTags", excludeTagsFilter.trim());
     if (locationFilter.trim()) sp.set("location", locationFilter.trim());
     return `/api/leads?${sp.toString()}`;
-  }, [active.statuses, q, tagFilter, locationFilter]);
+  }, [active.statuses, q, tagFilter, excludeTagsFilter, locationFilter]);
 
   const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
     keepPreviousData: true,
@@ -149,7 +151,7 @@ export default function LeadBoard() {
             </button>
           ))}
         </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <div className="mt-3 grid gap-2 sm:grid-cols-4">
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -161,6 +163,12 @@ export default function LeadBoard() {
             onChange={(e) => setTagFilter(e.target.value)}
             placeholder="Tag filter (restaurant, bar…)"
             className="w-full rounded-xl border border-[color:var(--lavik-border)] bg-[color:var(--lavik-surface)] px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none placeholder:text-[color:var(--lavik-text)]/60 focus:border-[color:var(--lavik-accent)] focus:shadow-[0_0_0_3px_var(--lavik-glow)] sm:text-sm"
+          />
+          <input
+            value={excludeTagsFilter}
+            onChange={(e) => setExcludeTagsFilter(e.target.value)}
+            placeholder="Exclude tags (friseur, kosmetik…)"
+            className="w-full rounded-xl border border-red-500/30 bg-[color:var(--lavik-surface)] px-3 py-2 text-base text-[color:var(--lavik-text-strong)] outline-none placeholder:text-[color:var(--lavik-text)]/60 focus:border-red-400 focus:shadow-[0_0_0_3px_rgba(248,113,113,0.25)] sm:text-sm"
           />
           <input
             value={locationFilter}
